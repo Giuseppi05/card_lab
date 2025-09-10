@@ -1,4 +1,4 @@
-import { FiSettings, FiZap, FiImage, FiDownload } from 'react-icons/fi';
+import { FiSettings, FiZap, FiImage, FiDownload } from "react-icons/fi";
 
 /**
  * Componente Panel - Panel de configuración para personalizar colores, texturas y movimientos
@@ -65,7 +65,7 @@ function Panel({
   affiliationLogo,
 
   //Handler Image
-  onDownloadCard
+  onDownloadCard,
 }) {
   // Configuración de texturas disponibles
   const TEXTURES = [
@@ -81,6 +81,7 @@ function Panel({
     { name: "Comic", url: "textures/comic-texture.png" },
     { name: "Nubes", url: "textures/cloud-texture.png" },
     { name: "Mar", url: "textures/sea-texture.png" },
+    { name: "Diamond", url: "textures/diamond-texture.png" },
   ];
 
   // Configuracion de logos de generacion
@@ -168,6 +169,10 @@ function Panel({
    * Maneja el cambio de color desde el input hex y actualiza el color picker
    */
   const handleHexColorChange = (hexValue, colorChangeHandler) => {
+    if (hexValue === "") {
+      colorChangeHandler("#000000");
+      return;
+    }
     if (/^#[0-9A-F]{6}$/i.test(hexValue)) {
       colorChangeHandler(hexValue);
     }
@@ -191,7 +196,7 @@ function Panel({
         />
         <input
           type="text"
-          value={value}
+          defaultValue={value}
           onChange={(e) => handleHexColorChange(e.target.value, onChange)}
           className="input input-bordered w-full font-mono text-sm flex-1"
           placeholder="#000000"
@@ -208,7 +213,9 @@ function Panel({
   const renderSelectControl = (label, options, value, onChange, id) => (
     <div className="form-control w-full">
       <label htmlFor={id} className="label">
-        <span className="label-text font-medium text-base-content">{label}</span>
+        <span className="label-text font-medium text-base-content">
+          {label}
+        </span>
       </label>
       <select
         id={id}
@@ -225,16 +232,108 @@ function Panel({
     </div>
   );
 
+  /**
+   * Renderiza un control de selección de texturas en formato grilla
+   */
+  const renderTextureGridControl = (label, options, value, onChange, id) => (
+    <div className="form-control w-full">
+      <label htmlFor={id} className="label">
+        <span className="label-text font-medium text-base-content">
+          {label}
+        </span>
+      </label>
+      <div className="grid grid-cols-4 gap-3 p-4 border border-base-300 rounded-lg bg-base-100">
+        {options.map((option) => (
+          <div
+            key={option.value}
+            className={`
+            relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105
+            ${
+              value === option.value
+                ? "border-primary shadow-lg ring-2 ring-primary ring-opacity-50"
+                : "border-base-300 hover:border-primary"
+            }
+          `}
+            onClick={() => onChange(option.value)}
+          >
+            <div className="aspect-square w-full h-full">
+              {option.value ? (
+                <img
+                  src={option.value}
+                  alt={option.label}
+                  className="w-full h-full object-cover block"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "flex";
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-base-content opacity-50"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </div>
+              )}
+
+              <div
+                className="w-full h-full bg-base-200 flex items-center justify-center text-xs text-base-content opacity-70"
+                style={{ display: "none" }}
+              >
+                {option.label}
+              </div>
+            </div>
+
+            {/* Label overlay con fondo semi-transparente */}
+            <div
+              className="absolute bottom-0 left-0 right-0 text-white text-xs px-2 py-1 text-center"
+              style={{ backgroundColor: "rgba(0, 0, 0, 0.45)" }}
+            >
+              <span className="font-medium">{option.label}</span>
+            </div>
+
+            {/* Indicador de selección */}
+            {value === option.value && (
+              <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                <svg
+                  className="w-2.5 h-2.5 text-primary-content"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-base-200 min-h-screen">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-center mb-2">Panel de Configuración</h2>
-        <p className="text-base-content/70 text-center">Personaliza tu carta de One Piece</p>
+        <h2 className="text-3xl font-bold mb-2">Panel de Configuración</h2>
+        <p className="text-base-content/70">
+          Personaliza tu carta de One Piece
+        </p>
       </div>
 
       {/* Acordeón de configuración */}
       <div className="join join-vertical bg-base-100 w-full shadow-lg rounded-lg overflow-hidden mb-20">
-        
         {/* Sección General */}
         <div className="collapse collapse-arrow join-item border-base-300 border">
           <input type="checkbox" name="config-accordion" />
@@ -246,7 +345,6 @@ function Panel({
           </div>
           <div className="collapse-content">
             <div className="pt-6 space-y-6">
-              
               {/* Sub-acordeón de Colores */}
               <div className="collapse collapse-plus border-b border-base-300">
                 <input type="checkbox" name="colors-accordion" />
@@ -292,9 +390,9 @@ function Panel({
                 <div className="collapse-content px-0">
                   <div className="pt-4">
                     <div className="max-w-md">
-                      {renderSelectControl(
+                      {renderTextureGridControl(
                         "Textura de fondo",
-                        TEXTURES.map(t => ({ label: t.name, value: t.url })),
+                        TEXTURES.map((t) => ({ label: t.name, value: t.url })),
                         texture,
                         onTextureChange,
                         "texture-select"
@@ -303,7 +401,6 @@ function Panel({
                   </div>
                 </div>
               </div>
-              
             </div>
           </div>
         </div>
@@ -319,7 +416,6 @@ function Panel({
           </div>
           <div className="collapse-content">
             <div className="pt-6 space-y-6">
-              
               {/* Sub-acordeón Movimiento Uno */}
               <div className="collapse collapse-plus border-b border-base-300">
                 <input type="checkbox" name="movement-one-accordion" />
@@ -347,7 +443,7 @@ function Panel({
                   </div>
                 </div>
               </div>
-                
+
               {/* Sub-acordeón Movimiento Dos */}
               <div className="collapse collapse-plus border-b border-base-300">
                 <input type="checkbox" name="movement-two-accordion" />
