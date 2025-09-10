@@ -63,7 +63,7 @@ export default function Movement({ type, level = "none" }) {
       <div className="flex items-center gap-2 mb-1 w-full">
 
         {/* Renderizado de iconos */}
-        <p className="text-xl">{renderTypeIcon()}</p>
+        <p className="text-xl font-bold">{renderTypeIcon()}</p>
         {renderLevelIcon()}
 
         {/* Input para el nombre del movimiento */}
@@ -72,7 +72,7 @@ export default function Movement({ type, level = "none" }) {
           name="name"
           id="name"
           defaultValue="Movement Name"
-          className="outline-none min-w-0 w-5/6"
+          className="outline-none min-w-0 w-5/6 font-bold"
         />
       </div>
       
@@ -84,7 +84,7 @@ export default function Movement({ type, level = "none" }) {
           <textarea
             name="descripcion"
             defaultValue="Description Movement"
-            className="text-xs outline-none resize-none min-h-11 leading-tight font-thin ms-2 overflow-hidden"
+            className="text-xs outline-none resize-none min-h-11 leading-tight ms-2 overflow-hidden"
           />
         </div>
         
