@@ -134,6 +134,7 @@ function App() {
     classLogo,
     affiliationLogo,
     image,
+    onImageChange: setImage,
   };
 
   // Props agrupadas para Panel
@@ -179,7 +180,6 @@ function App() {
     affiliationLogo,
 
     // Handler Image
-    onImageChange: setImage,
     onDownloadCard: handleDownload,
   };
 

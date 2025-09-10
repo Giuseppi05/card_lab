@@ -19,6 +19,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, forwardRef } from "r
  * @param {string} props.longLogo - Logo largo
  * @param {string} props.affiliationLogo - Logo de afiliación
  * @param {string} props.image - Imagen del personaje (por defecto: "character.png")
+ * @param {function} props.onImageChange - Callback para cambio de imagen
  * @param {React.Ref} ref - Referencia para capturar el componente
  */
 const Card = forwardRef(({
@@ -36,6 +37,7 @@ const Card = forwardRef(({
   longLogo,
   affiliationLogo,
   image,
+  onImageChange,
 }, ref) => {
   // Estados del componente
   const [isEditing, setIsEditing] = useState(false);
@@ -44,10 +46,12 @@ const Card = forwardRef(({
   const [dragging, setDragging] = useState(false);
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
   const [minScale, setMinScale] = useState(1);
+  const [clickTimeout, setClickTimeout] = useState(null);
 
   // Referencias
   const containerRef = useRef(null);
   const imgRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   /**
    * Utilidad para limitar un valor entre un mínimo y máximo
@@ -118,6 +122,50 @@ const Card = forwardRef(({
     setLastPos({});
   }, []);
 
+  /**
+   * Maneja el cambio de archivo de imagen
+   * @param {Event} e - Evento del input file
+   */
+  const handleFileChange = useCallback((e) => {
+    const file = e.target.files[0];
+    if (file && onImageChange) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onImageChange(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+    // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
+    e.target.value = '';
+  }, [onImageChange]);
+
+  /**
+   * Maneja el click en la imagen (single click = subir imagen, double click = modo editor)
+   * @param {Event} e - Evento del click
+   */
+  const handleImageClick = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (clickTimeout) {
+      // Es un doble click - activar modo editor
+      clearTimeout(clickTimeout);
+      setClickTimeout(null);
+      setIsEditing(!isEditing);
+    } else {
+      // Es un single click - esperar para ver si hay doble click
+      const timeout = setTimeout(() => {
+        // Solo single click - abrir selector de archivo
+        if (!isEditing && fileInputRef.current) {
+          fileInputRef.current.click();
+        }
+        setClickTimeout(null);
+      }, 250); // 250ms para detectar doble click
+      
+      setClickTimeout(timeout);
+    }
+  }, [clickTimeout, isEditing]);
+
   // Calcular escala mínima cuando cambia la imagen
   useEffect(() => {
     if (containerRef.current && imgRef.current) {
@@ -139,6 +187,15 @@ const Card = forwardRef(({
     }
   }, [image]);
 
+  // Limpiar timeout al desmontar
+  useEffect(() => {
+    return () => {
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+      }
+    };
+  }, [clickTimeout]);
+
   // Handlers de eventos optimizados
   const handleWheel = useCallback((e) => {
     if (!isEditing) return;
@@ -149,7 +206,12 @@ const Card = forwardRef(({
     updatePosition(position.x, position.y);
   }, [isEditing, minScale, scale, position, updatePosition]);
 
-  const handleMouseDown = useCallback((e) => startDrag(e.clientX, e.clientY), [startDrag]);
+  const handleMouseDown = useCallback((e) => {
+    if (isEditing) {
+      startDrag(e.clientX, e.clientY);
+    }
+  }, [isEditing, startDrag]);
+
   const handleMouseMove = useCallback((e) => handleMove(e.clientX, e.clientY), [handleMove]);
 
   const handleTouchStart = useCallback((e) => {
@@ -178,8 +240,6 @@ const Card = forwardRef(({
     }
   }, [isEditing, dragging, handleMove, lastPos.dist, minScale]);
 
-  const toggleEditing = useCallback(() => setIsEditing(!isEditing), [isEditing]);
-
   // Estilos memoizados para optimizar renders
   const cardStyles = useMemo(() => ({
     backgroundColor,
@@ -198,7 +258,8 @@ const Card = forwardRef(({
     borderColor: imageBorderColor,
     overflow: "hidden",
     position: "relative",
-  }), [imageBorderColor]);
+    cursor: isEditing ? (dragging ? 'grabbing' : 'grab') : 'pointer',
+  }), [imageBorderColor, isEditing, dragging]);
 
   const imageTransformStyle = useMemo(() => ({
     transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
@@ -259,11 +320,21 @@ const Card = forwardRef(({
    * @returns {JSX.Element} Contenedor de la imagen principal
    */
   const renderMainImage = useCallback(() => (
-    <div className="w-full h-2/5 flex justify-center items-center" onDoubleClick={toggleEditing}>
+    <div className="w-full h-2/5 flex justify-center items-center">
+      {/* Input file oculto */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      
       <div
         ref={containerRef}
         className="border-5 w-5/6 h-full bg-white overflow-hidden flex items-center justify-center"
         style={imageStyles}
+        onClick={handleImageClick}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -277,19 +348,19 @@ const Card = forwardRef(({
           ref={imgRef}
           src={image}
           alt="Character"
-          className="card-image select-none cursor-pointer"
+          className="card-image select-none"
           style={imageTransformStyle}
           draggable={false}
         />
         {isEditing && (
-          <div className="absolute top-1 left-1 bg-black/50 text-white text-xs px-2 py-1 rounded">
+          <div className="absolute top-1 left-1 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none">
             Editando (scroll/pinch = zoom, arrastra = mover, doble click = salir)
           </div>
         )}
       </div>
     </div>
-  ), [toggleEditing, imageStyles, handleWheel, handleMouseDown, handleMouseMove, endDrag, 
-      handleTouchStart, handleTouchMove, image, imageTransformStyle, isEditing]);
+  ), [imageStyles, handleImageClick, handleWheel, handleMouseDown, handleMouseMove, endDrag, 
+      handleTouchStart, handleTouchMove, image, imageTransformStyle, isEditing, handleFileChange]);
 
   /**
    * Renderiza la sección de movimientos
