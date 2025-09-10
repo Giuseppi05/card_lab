@@ -1,0 +1,20 @@
+* {
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif
+}
+
+.hp-input {
+  -moz-appearance: textfield; /* Firefox */
+  -webkit-appearance: textfield; /* Safari/Chrome */
+  appearance: textfield;
+}
+
+/* Chrome, Safari, Edge */
+.hp-input::-webkit-outer-spin-button,
+.hp-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.color{
+    color: #000751;
+}
