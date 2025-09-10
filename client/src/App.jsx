@@ -196,9 +196,71 @@ function App() {
   const renderPanel = () => <Panel {...panelProps} />;
 
   return (
-    <div className="min-h-screen w-screen flex justify-center items-center">
-      {renderCard()}
-      {renderPanel()}
+    <div className="h-screen w-screen flex">
+      {/* Sidebar fijo para pantallas grandes */}
+
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col">
+        {/* Header con botón hamburguesa para móvil */}
+        <div className="lg:hidden flex justify-between items-center p-4 bg-base-100 border-b">
+          <h1 className="text-xl font-semibold">Mi App</h1>
+          <label htmlFor="my-drawer-4" className="btn btn-square btn-ghost">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </label>
+        </div>
+
+        {/* Área del contenido principal centrado */}
+        <div className="flex h-full">
+          
+          <div className="flex-1 flex justify-center items-center p-4">
+            {renderCard()}
+          </div>
+
+          <div className="hidden lg:flex lg:w-120 lg:flex-shrink-0">
+            <div className="w-full text-base-content overflow-y-auto">
+              {renderPanel()}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Drawer para móvil */}
+      <div className="drawer drawer-end lg:hidden">
+        <input id="my-drawer-4" type="checkbox" className="drawer-toggle" />
+        <div className="drawer-side">
+          <label
+            htmlFor="my-drawer-4"
+            aria-label="close sidebar"
+            className="drawer-overlay"
+          ></label>
+          <div className="menu bg-base-200 min-h-full w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Menú</h2>
+              <label
+                htmlFor="my-drawer-4"
+                className="btn btn-square btn-ghost btn-sm"
+              >
+                ✕
+              </label>
+            </div>
+            {renderPanel()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

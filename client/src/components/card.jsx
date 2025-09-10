@@ -393,14 +393,14 @@ const Card = forwardRef(({
         <img
           src={classLogo}
           alt=""
-          className="max-h-full max-w-full object-contain drop-shadow-[0_0_3px_black]"
+          className="max-h-full max-w-full object-contain drop-shadow-[0_0_2px_black]"
         />
       </div>
       <div className="flex items-center justify-center w-3/5">
         <img
           src={longLogo}
           alt=""
-          className="max-h-full max-w-full object-contain drop-shadow-[0_0_3px_black]"
+          className="max-h-full max-w-full object-contain drop-shadow-[0_0_2px_black]"
         />
       </div>
       {affiliationLogo !== "" && (
@@ -408,7 +408,7 @@ const Card = forwardRef(({
           <img
             src={affiliationLogo}
             alt=""
-            className="max-h-full max-w-full object-contain drop-shadow-[0_0_3px_black]"
+            className="max-h-full max-w-full object-contain drop-shadow-[0_0_2px_black]"
           />
         </div>
       )}

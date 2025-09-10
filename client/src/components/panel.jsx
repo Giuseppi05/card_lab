@@ -1,3 +1,5 @@
+import { FiSettings, FiZap, FiImage, FiDownload } from 'react-icons/fi';
+
 /**
  * Componente Panel - Panel de configuración para personalizar colores, texturas y movimientos
  * @param {function} onColorChange - Callback para cambio de color de fondo
@@ -162,124 +164,59 @@ function Panel({
     { value: "level-change", label: "Level Change" },
   ];
 
-  // Configuración de controles de color
-  const COLOR_CONTROLS = [
-    {
-      id: "backgroundColor",
-      label: "Seleccione el color de fondo",
-      value: bgColor,
-      onChange: onColorChange,
-    },
-    {
-      id: "borderColor",
-      label: "Seleccione el color del borde",
-      value: borderColor,
-      onChange: onBorderColor,
-    },
-    {
-      id: "imageBorderColor",
-      label: "Seleccione el color del borde de la imagen",
-      value: imageBorderColor,
-      onChange: onImageBorderColor,
-    },
-    {
-      id: "textColor",
-      label: "Seleccione el color del texto",
-      value: textColor,
-      onChange: onTextColor,
-    },
-  ];
-
-  // Configuración de controles de movimiento
-  const MOVEMENT_CONTROLS = [
-    {
-      label: "Seleccione el tipo del movimiento uno",
-      options: MOVEMENT_TYPES,
-      onChange: onMovementOneChange,
-      value: typeMovementOne,
-    },
-    {
-      label: "Seleccione el level del movimiento uno",
-      options: MOVEMENT_LEVELS,
-      onChange: onLevelMovementOneChange,
-      value: levelMovementOne,
-    },
-    {
-      label: "Seleccione el tipo del movimiento dos",
-      options: MOVEMENT_TYPES,
-      onChange: onMovementTwoChange,
-      value: typeMovementTwo,
-    },
-    {
-      label: "Seleccione el level del movimiento dos",
-      options: MOVEMENT_LEVELS,
-      onChange: onLevelMovementTwoChange,
-      value: levelMovementTwo,
-    },
-  ];
-
-  const LOGOS_CONTROLS = [
-    {
-      label: "Seleccione el logo de la generacion",
-      options: GEN_LOGO,
-      onChange: onGenLogoChange,
-      value: genLogo,
-    },
-    {
-      label: "Seleccione el logo largo",
-      options: LONG_LOGO,
-      onChange: onLongLogoChange,
-      value: longLogo,
-    },
-    {
-      label: "Seleccione el logo de clase",
-      options: CLASSES,
-      onChange: onClassLogoChange,
-      value: classLogo,
-    },
-    {
-      label: "Seleccione el logo de Afiliacion",
-      options: AFILIATIONS,
-      onChange: onAffiliationLogoChange,
-      value: affiliationLogo,
-    },
-  ];
+  /**
+   * Maneja el cambio de color desde el input hex y actualiza el color picker
+   */
+  const handleHexColorChange = (hexValue, colorChangeHandler) => {
+    if (/^#[0-9A-F]{6}$/i.test(hexValue)) {
+      colorChangeHandler(hexValue);
+    }
+  };
 
   /**
-   * Renderiza un control de color
-   * @param {Object} control - Configuración del control de color
-   * @returns {JSX.Element} Control de color
+   * Renderiza un control de color mejorado - cada control en su propia fila
    */
-  const renderColorControl = (control) => (
-    <div className="form-group" key={control.id}>
-      <label htmlFor={control.id} className="mr-2">
-        {control.label}
+  const renderColorControl = (id, label, value, onChange) => (
+    <div className="form-control w-full" key={id}>
+      <label htmlFor={id} className="label">
+        <span className="label-text font-medium">{label}</span>
       </label>
-
-      <input
-        type="color"
-        id={control.id}
-        value={control.value}
-        onChange={(e) => control.onChange(e.target.value)}
-      />
+      <div className="flex flex-row gap-3 items-center">
+        <input
+          type="color"
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-16 h-16 rounded-lg border-2 border-base-300 cursor-pointer hover:border-base-400 transition-colors flex-shrink-0"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => handleHexColorChange(e.target.value, onChange)}
+          className="input input-bordered w-full font-mono text-sm flex-1"
+          placeholder="#000000"
+          pattern="^#[0-9A-F]{6}$"
+          maxLength={7}
+        />
+      </div>
     </div>
   );
 
   /**
-   * Renderiza un control de selección
-   * @param {Object} control - Configuración del control de selección
-   * @param {number} index - Índice para key único
-   * @param {string} prefix - Prefijo para la key (por defecto 'select')
-   * @returns {JSX.Element} Control de selección
+   * Renderiza un control de selección mejorado
    */
-  const renderSelectControl = (control, index, prefix = "select") => (
-    <div className="form-group" key={`${prefix}-${index}`}>
-      <label className="mr-2">{control.label}</label>
+  const renderSelectControl = (label, options, value, onChange, id) => (
+    <div className="form-control w-full">
+      <label htmlFor={id} className="label">
+        <span className="label-text font-medium text-base-content">{label}</span>
+      </label>
       <select
-        value={control.value || ""}
-        onChange={(e) => control.onChange(e.target.value)}
+        id={id}
+        className="select select-bordered w-full focus:select-primary"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
       >
-        {control.options.map((option) => (
+        {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -288,57 +225,217 @@ function Panel({
     </div>
   );
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onImageChange(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   return (
-    <div className="w-1/3 flex justify-center items-center p-3 flex-col">
-      {/* Controles de color */}
-      {COLOR_CONTROLS.map(renderColorControl)}
-
-      {/* Control de textura */}
-      <div className="form-group">
-        <label htmlFor="texture" className="mr-2">
-          Seleccione la textura de fondo
-        </label>
-
-        <select
-          id="texture"
-          value={texture}
-          onChange={(e) => onTextureChange(e.target.value)}
-        >
-          {TEXTURES.map((t) => (
-            <option key={t.url} value={t.url}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+    <div className="w-full max-w-4xl mx-auto p-6 bg-base-200 min-h-screen">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-center mb-2">Panel de Configuración</h2>
+        <p className="text-base-content/70 text-center">Personaliza tu carta de One Piece</p>
       </div>
 
-      {/* Controles de movimiento */}
-      {MOVEMENT_CONTROLS.map((control, index) =>
-        renderSelectControl(control, index, "movement")
-      )}
+      {/* Acordeón de configuración */}
+      <div className="join join-vertical bg-base-100 w-full shadow-lg rounded-lg overflow-hidden mb-20">
+        
+        {/* Sección General */}
+        <div className="collapse collapse-arrow join-item border-base-300 border">
+          <input type="checkbox" name="config-accordion" />
+          <div className="collapse-title text-xl font-semibold">
+            <div className="flex items-center gap-3">
+              <FiSettings className="w-5 h-5" />
+              <span>Configuración General</span>
+            </div>
+          </div>
+          <div className="collapse-content">
+            <div className="pt-6 space-y-6">
+              
+              {/* Sub-acordeón de Colores */}
+              <div className="collapse collapse-plus border-b border-base-300">
+                <input type="checkbox" name="colors-accordion" />
+                <div className="collapse-title text-lg font-medium px-0">
+                  <span>Colores</span>
+                </div>
+                <div className="collapse-content px-0">
+                  <div className="pt-4 space-y-6">
+                    {renderColorControl(
+                      "backgroundColor",
+                      "Color de fondo",
+                      bgColor,
+                      onColorChange
+                    )}
+                    {renderColorControl(
+                      "borderColor",
+                      "Color del borde",
+                      borderColor,
+                      onBorderColor
+                    )}
+                    {renderColorControl(
+                      "imageBorderColor",
+                      "Color del borde de imagen",
+                      imageBorderColor,
+                      onImageBorderColor
+                    )}
+                    {renderColorControl(
+                      "textColor",
+                      "Color del texto",
+                      textColor,
+                      onTextColor
+                    )}
+                  </div>
+                </div>
+              </div>
 
-      {/* Controles de logos */}
-      {LOGOS_CONTROLS.map((control, index) =>
-        renderSelectControl(control, index, "logo")
-      )}
+              {/* Sub-acordeón de Texturas */}
+              <div className="collapse collapse-plus border-b border-base-300">
+                <input type="checkbox" name="textures-accordion" />
+                <div className="collapse-title text-lg font-medium px-0">
+                  <span>Texturas</span>
+                </div>
+                <div className="collapse-content px-0">
+                  <div className="pt-4">
+                    <div className="max-w-md">
+                      {renderSelectControl(
+                        "Textura de fondo",
+                        TEXTURES.map(t => ({ label: t.name, value: t.url })),
+                        texture,
+                        onTextureChange,
+                        "texture-select"
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
 
-      <button
-        onClick={onDownloadCard}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-      >
-        Descargar carta en PNG
-      </button>
+        {/* Sección Movimientos */}
+        <div className="collapse collapse-arrow join-item border-base-300 border">
+          <input type="checkbox" name="config-accordion" />
+          <div className="collapse-title text-xl font-semibold">
+            <div className="flex items-center gap-3">
+              <FiZap className="w-5 h-5" />
+              <span>Movimientos</span>
+            </div>
+          </div>
+          <div className="collapse-content">
+            <div className="pt-6 space-y-6">
+              
+              {/* Sub-acordeón Movimiento Uno */}
+              <div className="collapse collapse-plus border-b border-base-300">
+                <input type="checkbox" name="movement-one-accordion" />
+                <div className="collapse-title text-lg font-medium px-0">
+                  <span>Movimiento Uno</span>
+                </div>
+                <div className="collapse-content px-0">
+                  <div className="pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {renderSelectControl(
+                        "Tipo de movimiento",
+                        MOVEMENT_TYPES,
+                        typeMovementOne,
+                        onMovementOneChange,
+                        "movement-one-type"
+                      )}
+                      {renderSelectControl(
+                        "Nivel de movimiento",
+                        MOVEMENT_LEVELS,
+                        levelMovementOne,
+                        onLevelMovementOneChange,
+                        "movement-one-level"
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+                
+              {/* Sub-acordeón Movimiento Dos */}
+              <div className="collapse collapse-plus border-b border-base-300">
+                <input type="checkbox" name="movement-two-accordion" />
+                <div className="collapse-title text-lg font-medium px-0">
+                  <span>Movimiento Dos</span>
+                </div>
+                <div className="collapse-content px-0">
+                  <div className="pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {renderSelectControl(
+                        "Tipo de movimiento",
+                        MOVEMENT_TYPES,
+                        typeMovementTwo,
+                        onMovementTwoChange,
+                        "movement-two-type"
+                      )}
+                      {renderSelectControl(
+                        "Nivel de movimiento",
+                        MOVEMENT_LEVELS,
+                        levelMovementTwo,
+                        onLevelMovementTwoChange,
+                        "movement-two-level"
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sección Logos */}
+        <div className="collapse collapse-arrow join-item border-base-300 border">
+          <input type="checkbox" name="config-accordion" />
+          <div className="collapse-title text-xl font-semibold">
+            <div className="flex items-center gap-3">
+              <FiImage className="w-5 h-5" />
+              <span>Logos y Símbolos</span>
+            </div>
+          </div>
+          <div className="collapse-content">
+            <div className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {renderSelectControl(
+                  "Logo de generación",
+                  GEN_LOGO,
+                  genLogo,
+                  onGenLogoChange,
+                  "gen-logo-select"
+                )}
+                {renderSelectControl(
+                  "Logo largo",
+                  LONG_LOGO,
+                  longLogo,
+                  onLongLogoChange,
+                  "long-logo-select"
+                )}
+                {renderSelectControl(
+                  "Logo de clase",
+                  CLASSES,
+                  classLogo,
+                  onClassLogoChange,
+                  "class-logo-select"
+                )}
+                {renderSelectControl(
+                  "Logo de afiliación",
+                  AFILIATIONS,
+                  affiliationLogo,
+                  onAffiliationLogoChange,
+                  "affiliation-logo-select"
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Botón de descarga flotante */}
+      <div className="fixed bottom-6 right-6">
+        <button
+          onClick={onDownloadCard}
+          className="btn btn-primary btn-lg shadow-xl hover:shadow-2xl transition-all duration-300"
+          aria-label="Descargar carta en PNG"
+        >
+          <FiDownload className="w-5 h-5" />
+          Descargar PNG
+        </button>
+      </div>
     </div>
   );
 }

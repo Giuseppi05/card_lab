@@ -63,7 +63,7 @@ export default function Movement({ type, level = "none" }) {
       <div className="flex items-center gap-2 mb-1 w-full">
 
         {/* Renderizado de iconos */}
-        <p className="text-xl font-bold">{renderTypeIcon()}</p>
+        <p className="text-xl">{renderTypeIcon()}</p>
         {renderLevelIcon()}
 
         {/* Input para el nombre del movimiento */}
