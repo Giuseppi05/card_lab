@@ -252,7 +252,7 @@ function App() {
               <h2 className="text-lg font-semibold">Menú</h2>
               <label
                 htmlFor="my-drawer-4"
-                className="btn btn-square btn-ghost btn-sm"
+                className="btn btn-square btn-ghost btn-sm text-2xl"
               >
                 ✕
               </label>

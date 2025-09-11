@@ -1,5 +1,5 @@
 import "../styles/card.css";
-import Movement from "./movement";
+import Movement from "./card_parts/movement";
 import { useState, useEffect, useRef, useCallback, useMemo, forwardRef } from "react";
 
 /**
