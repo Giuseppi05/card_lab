@@ -11,7 +11,7 @@ import MOVEMENT_LEVELS from "../data/movementLevels.js";
 
 // Imports de componentes
 import colorControl from "./panel_parts/colorControl.jsx";
-import selectGridControl from "./panel_parts/SelectGridControl.jsx";
+import selectGridControl from "./panel_parts/selectGridControl.jsx";
 import selectControl from "./panel_parts/selectControl.jsx";
 
 // Configuraciones de secciones para reducir repetición
@@ -197,6 +197,33 @@ function Panel({
     );
   };
 
+  const COLOR_CONTROLS = [
+    {
+      id: "backgroundColor",
+      label: "Color de fondo",
+      value: bgColor,
+      onChange: onColorChange,
+    },
+    {
+      id: "borderColor",
+      label: "Color del borde",
+      value: borderColor,
+      onChange: onBorderColor,
+    },
+    {
+      id: "imageBorderColor",
+      label: "Color del borde de imagen",
+      value: imageBorderColor,
+      onChange: onImageBorderColor,
+    },
+    {
+      id: "textColor",
+      label: "Color del texto",
+      value: textColor,
+      onChange: onTextColor,
+    },
+  ];
+
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-base-200 min-h-screen">
       <div className="mb-8">
@@ -221,30 +248,9 @@ function Panel({
                 "colors",
                 "Colores",
                 <div className="space-y-6 grid grid-cols-2 gap-5 m-2">
-                  {colorControl(
-                    "backgroundColor",
-                    "Color de fondo",
-                    bgColor,
-                    onColorChange
-                  )}
-                  {colorControl(
-                    "borderColor",
-                    "Color del borde",
-                    borderColor,
-                    onBorderColor
-                  )}
-                  {colorControl(
-                    "imageBorderColor",
-                    "Color del borde de imagen",
-                    imageBorderColor,
-                    onImageBorderColor
-                  )}
-                  {colorControl(
-                    "textColor",
-                    "Color del texto",
-                    textColor,
-                    onTextColor
-                  )}
+                  {COLOR_CONTROLS.map(({ id, label, value, onChange }) => {
+                    return colorControl(id, label, value, onChange);
+                  })}
                 </div>
               )}
 
@@ -280,7 +286,6 @@ function Panel({
         </div>
 
         {/* Sección Logos */}
-        {/* Sección Logos */}
         <div className="collapse collapse-arrow join-item border-base-300 border">
           <input type="checkbox" name={ACCORDION_SECTIONS.logos.name} />
           <div className="collapse-title text-xl font-semibold">
@@ -300,7 +305,7 @@ function Panel({
                       <div className="max-w-md">
                         {selectGridControl(
                           logo.label,
-                          logo.data, // ✅ ya tiene { label, value }
+                          logo.data,
                           logoValue,
                           onLogoChange,
                           logo.id
