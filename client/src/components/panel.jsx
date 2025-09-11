@@ -225,7 +225,7 @@ function Panel({
   ];
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-base-200 min-h-screen">
+    <div className="w-full max-w-4xl mx-auto p-0 lg:p-6 bg-base-200 min-h-screen">
       <div className="mb-8">
         <h2 className="text-3xl font-bold mb-2">Panel de Configuración</h2>
         <p className="text-base-content/70">
