@@ -1,8 +1,3 @@
-/**
- * Componente Movement - Renderiza un elemento de movimiento con diferentes tipos y niveles
- * @param {string} type - Tipo de movimiento: "active-attack", "pasive-attack", "active-hab", "pasive-hab"
- * @param {string} level - Nivel del movimiento: "level-up", "level-down", "level-change", "none"
- */
 export default function Movement({ type, level = "none" }) {
   // Mapeo de iconos por tipo
   const TYPE_ICONS = {

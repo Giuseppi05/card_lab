@@ -27,6 +27,7 @@ function App() {
       long: "logos/animated_logo.png",
       class: "classes/piratas.png",
       affiliation: "",
+      mark: false
     },
     image: "placeholder_image.png",
   };
@@ -63,6 +64,7 @@ function App() {
   const [affiliationLogo, setAffiliationLogo] = useState(
     INITIAL_STATE.logos.affiliation
   );
+  const [mark, setMark] = useState(INITIAL_STATE.logos.mark)
 
   //Estado para imagen
   const [image, setImage] = useState(INITIAL_STATE.image);
@@ -133,6 +135,7 @@ function App() {
     longLogo,
     classLogo,
     affiliationLogo,
+    mark,
     image,
     onImageChange: setImage,
   };
@@ -172,12 +175,14 @@ function App() {
     onLongLogoChange: setLongLogo,
     onClassLogoChange: setClassLogo,
     onAffiliationLogoChange: setAffiliationLogo,
+    onMarkChange: setMark,
 
     // Logo values
     genLogo,
     longLogo,
     classLogo,
     affiliationLogo,
+    mark,
 
     // Handler Image
     onDownloadCard: handleDownload,

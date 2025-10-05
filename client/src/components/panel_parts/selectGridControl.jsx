@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { TfiSearch } from "react-icons/tfi";
 import { FiChevronUp } from "react-icons/fi";
 
-export default function selectGridControl(label, options, value, onChange, id) {
+export default function selectGridControl(options, value, onChange, id) {
   const [searchTerm, setSearchTerm] = useState("");
   const [visibleCount, setVisibleCount] = useState(8);
   
@@ -41,12 +41,6 @@ export default function selectGridControl(label, options, value, onChange, id) {
 
   return (
     <div className="form-control w-full">
-      <div htmlFor={id} className="label">
-        <span className="label-text font-medium text-base-content">
-          {label}
-        </span>
-      </div>
-      
       {/* Input de búsqueda */}
       <div className="flex items-center m-2">
         <input

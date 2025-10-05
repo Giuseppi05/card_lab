@@ -74,13 +74,6 @@ const LOGO_CONFIG = [
     handler: "onClassLogoChange",
     id: "class-logo-select",
   },
-  {
-    label: "Logo de afiliación",
-    data: AFILIATIONS,
-    value: "affiliationLogo",
-    handler: "onAffiliationLogoChange",
-    id: "affiliation-logo-select",
-  },
 ];
 
 /**
@@ -104,6 +97,7 @@ function Panel({
   onLongLogoChange,
   onClassLogoChange,
   onAffiliationLogoChange,
+  onMarkChange,
   // Valores de color
   bgColor,
   borderColor,
@@ -121,6 +115,7 @@ function Panel({
   longLogo,
   classLogo,
   affiliationLogo,
+  mark,
   // Handler Image
   onDownloadCard,
 }) {
@@ -260,7 +255,6 @@ function Panel({
                 "Texturas",
                 <div className="max-w-md">
                   {selectGridControl(
-                    "Textura de fondo",
                     TEXTURES.map((t) => ({ label: t.name, value: t.url })),
                     texture,
                     onTextureChange,
@@ -304,7 +298,6 @@ function Panel({
                       logo.label,
                       <div className="max-w-md">
                         {selectGridControl(
-                          logo.label,
                           logo.data,
                           logoValue,
                           onLogoChange,
@@ -315,6 +308,35 @@ function Panel({
                   </div>
                 );
               })}
+              {renderSubAccordion(
+                "affiliation-logo-select",
+                "Logo de afiliación",
+                <div className="max-w-md">
+                  {selectGridControl(
+                    AFILIATIONS,
+                    affiliationLogo,
+                    onAffiliationLogoChange,
+                    "affiliation-logo-select"
+                  )}
+
+                  {affiliationLogo != "" && 
+                  <div className="mt-4 flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="add-strike"
+                      className="toggle toggle-primary"
+                      checked={mark}
+                      onChange={(e) => onMarkChange(e.target.checked)}
+                    />
+                    <label
+                      htmlFor="add-strike"
+                      className={`cursor-pointer font-medium`}
+                    >
+                      Añadir tachado
+                    </label>
+                  </div>}
+                </div>
+              )}
             </div>
           </div>
         </div>
