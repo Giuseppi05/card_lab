@@ -21,6 +21,7 @@ const AFILIATIONS = [
   { label: "Piratas Moria", value: "afiliaciones/piratas_moria.png" },
   { label: "Piratas Mugiwara", value: "afiliaciones/piratas_mugiwara.png" },
   { label: "Piratas Pelirrojo", value: "afiliaciones/piratas_pelirrojo.png" },
+  { label: "Piratas Rocks", value: "afiliaciones/piratas_rocks.png" },
   { label: "Piratas Roshio", value: "afiliaciones/piratas_roshio.png" },
   { label: "Piratas Sol", value: "afiliaciones/piratas_sol.png" },
   { label: "Piratas Uroge", value: "afiliaciones/piratas_uroge.png" },
