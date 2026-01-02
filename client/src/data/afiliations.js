@@ -4,6 +4,7 @@ const AFILIATIONS = [
   { label: "Alianza Saruyama", value: "afiliaciones/alianza_saruyama.png" },
   { label: "Baroque Works", value: "afiliaciones/baroque_works.png" },
   { label: "Familia Franky", value: "afiliaciones/franky_family.png" },
+  { label: "Impel Down", value: "afiliaciones/impel_down.png" },
   { label: "Nuevos Piratas Gyojin", value: "afiliaciones/nuevos_piratas_gyojin.png" },
   { label: "Piratas Apoo", value: "afiliaciones/piratas_apoo.png" },
   { label: "Piratas Arlong", value: "afiliaciones/piratas_arlong.png" },
