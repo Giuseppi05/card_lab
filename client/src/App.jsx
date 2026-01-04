@@ -23,7 +23,7 @@ function App() {
       two: { type: "active-attack", level: "none" },
     },
     logos: {
-      gen: "logos/g4_post.png",
+      gen: "logos/g5.png",
       long: "logos/animated_logo.png",
       class: "classes/piratas.png",
       affiliation: "",
