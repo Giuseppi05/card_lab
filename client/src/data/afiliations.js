@@ -30,6 +30,11 @@ const AFILIATIONS = [
   { label: "Piratas Uroge", value: "afiliaciones/piratas_uroge.png" },
   { label: "Piratas World", value: "afiliaciones/piratas_world.png" },
   { label: "Piratas X-Drake", value: "afiliaciones/piratas_X-Drake.png" },
+  { label: "Piratas León Dorado", value: "afiliaciones/piratas_leon_dorado.png" },
+  { label: "Piratas de Roger", value: "afiliaciones/piratas_roger.png" },
+  { label: "Piratas Rumbar", value: "afiliaciones/piratas_rumbar.png" },
+  { label: "Piratas de Usopp", value: "afiliaciones/piratas_usopp.png" },
+  { label: "Piratas de Hiruluk", value: "afiliaciones/piratas_hiruluk.png" },
 ];
 
 
