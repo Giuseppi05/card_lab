@@ -1,428 +1,270 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { toCanvas } from "html-to-image";
 
 /**
- * MobileEyeDropper – Cuentagotas personalizado para móviles.
- * Captura la página visible como canvas y permite al usuario tocar
- * para seleccionar un color, con una lupa para mayor precisión.
+ * Cuentagotas móvil instantáneo (híbrido).
+ * - Para elementos normales: lee el color CSS con getComputedStyle
+ * - Para imágenes (<img>): dibuja en canvas temporal y lee el píxel exacto
+ * - Para <canvas>: lee el píxel directamente
+ * Sin captura de pantalla completa → instantáneo.
  */
 export default function MobileEyeDropper({ onColorPick, onCancel }) {
-  const canvasRef = useRef(null);
-  const loupeCanvasRef = useRef(null);
-  const [ready, setReady] = useState(false);
   const [currentColor, setCurrentColor] = useState(null);
-  const [touchPos, setTouchPos] = useState(null);
-  const pixelDataRef = useRef(null); // Canvas 2D context guardado
+  const overlayRef = useRef(null);
+  const tempCanvasRef = useRef(document.createElement("canvas"));
 
-  const LOUPE_SIZE = 120; // Tamaño de la lupa en px
-  const LOUPE_ZOOM = 6;   // Nivel de zoom
-  const GRID_PIXELS = 11; // Cuántos pixeles caben en la lupa (impar para centrar)
+  const rgbToHex = (r, g, b) =>
+    `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 
-  // Capturar la página completa como canvas al montar
-  useEffect(() => {
-    let cancelled = false;
+  const parseRgbString = (rgb) => {
+    if (!rgb || rgb === "transparent" || rgb === "rgba(0, 0, 0, 0)") return null;
+    const m = rgb.match(/\d+/g);
+    if (!m || m.length < 3) return null;
+    return rgbToHex(Number(m[0]), Number(m[1]), Number(m[2]));
+  };
 
-    const capture = async () => {
-      try {
-        // Capturar el body completo
-        const target = document.body;
-        const rect = target.getBoundingClientRect();
+  // Leer color del píxel de una <img> en (clientX, clientY)
+  const getColorFromImage = useCallback((img, clientX, clientY) => {
+    try {
+      const rect = img.getBoundingClientRect();
+      // Posición relativa dentro de la imagen visible
+      const relX = clientX - rect.left;
+      const relY = clientY - rect.top;
 
-        const canvas = await toCanvas(target, {
-          cacheBust: true,
-          pixelRatio: 1,
-          width: Math.ceil(rect.width),
-          height: Math.ceil(rect.height),
-          style: {
-            margin: "0",
-            padding: "0",
-          },
-          // Filtrar nuestro propio overlay para que no se capture a sí mismo
-          filter: (node) => {
-            if (node.dataset && node.dataset.eyedropperOverlay) return false;
-            return true;
-          },
-        });
+      // Dimensiones naturales de la imagen
+      const natW = img.naturalWidth || img.width;
+      const natH = img.naturalHeight || img.height;
 
-        if (cancelled) return;
+      // Mapear coordenadas de display a coordenadas naturales
+      const pixelX = Math.round((relX / rect.width) * natW);
+      const pixelY = Math.round((relY / rect.height) * natH);
 
-        const displayCanvas = canvasRef.current;
-        if (!displayCanvas) return;
+      if (pixelX < 0 || pixelY < 0 || pixelX >= natW || pixelY >= natH) return null;
 
-        // Ajustar el canvas al tamaño de la pantalla
-        displayCanvas.width = window.innerWidth;
-        displayCanvas.height = window.innerHeight;
+      const canvas = tempCanvasRef.current;
+      canvas.width = natW;
+      canvas.height = natH;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, natW, natH);
 
-        const ctx = displayCanvas.getContext("2d");
-        // Dibujar el screenshot escalado a la pantalla
-        ctx.drawImage(
-          canvas,
-          0,
-          window.scrollY,
-          window.innerWidth,
-          window.innerHeight,
-          0,
-          0,
-          window.innerWidth,
-          window.innerHeight
-        );
-
-        pixelDataRef.current = ctx;
-        setReady(true);
-      } catch (err) {
-        console.error("Error capturando pantalla para cuentagotas:", err);
-        onCancel();
-      }
-    };
-
-    // Pequeño delay para que el drawer se cierre completamente
-    const timer = setTimeout(capture, 100);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [onCancel]);
-
-  // Obtener color del pixel en la posición (x, y)
-  const getColorAtPosition = useCallback((x, y) => {
-    const ctx = pixelDataRef.current;
-    if (!ctx) return null;
-
-    const pixel = ctx.getImageData(
-      Math.round(x * (canvasRef.current.width / canvasRef.current.clientWidth)),
-      Math.round(y * (canvasRef.current.height / canvasRef.current.clientHeight)),
-      1,
-      1
-    ).data;
-
-    const r = pixel[0];
-    const g = pixel[1];
-    const b = pixel[2];
-    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+      const pixel = ctx.getImageData(pixelX, pixelY, 1, 1).data;
+      // Si el píxel es totalmente transparente, no devolver color
+      if (pixel[3] === 0) return null;
+      return rgbToHex(pixel[0], pixel[1], pixel[2]);
+    } catch {
+      // CORS o error al leer la imagen
+      return null;
+    }
   }, []);
 
-  // Dibujar la lupa
-  const drawLoupe = useCallback(
+  // Leer color de un <canvas> en (clientX, clientY)
+  const getColorFromCanvas = useCallback((canvas, clientX, clientY) => {
+    try {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const px = Math.round((clientX - rect.left) * scaleX);
+      const py = Math.round((clientY - rect.top) * scaleY);
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const pixel = ctx.getImageData(px, py, 1, 1).data;
+      if (pixel[3] === 0) return null;
+      return rgbToHex(pixel[0], pixel[1], pixel[2]);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Obtener color CSS subiendo por el DOM
+  const getColorFromCSS = useCallback((el) => {
+    let node = el;
+    while (node && node !== document.documentElement) {
+      // Inline style primero (más específico)
+      if (node.style?.backgroundColor) {
+        const hex = parseRgbString(node.style.backgroundColor);
+        if (hex) return hex;
+      }
+      // Computed style
+      const bg = window.getComputedStyle(node).backgroundColor;
+      const hex = parseRgbString(bg);
+      if (hex) return hex;
+      node = node.parentElement;
+    }
+    return "#ffffff";
+  }, []);
+
+  // Función principal: obtener color en posición (x, y)
+  const getColorAt = useCallback(
     (x, y) => {
-      const loupeCanvas = loupeCanvasRef.current;
-      const srcCtx = pixelDataRef.current;
-      if (!loupeCanvas || !srcCtx) return;
+      const overlay = overlayRef.current;
+      if (!overlay) return null;
 
-      const loupeCtx = loupeCanvas.getContext("2d");
-      const halfGrid = Math.floor(GRID_PIXELS / 2);
+      // Ocultar overlay brevemente para ver qué hay debajo
+      overlay.style.pointerEvents = "none";
+      overlay.style.visibility = "hidden";
 
-      loupeCanvas.width = LOUPE_SIZE;
-      loupeCanvas.height = LOUPE_SIZE;
+      const el = document.elementFromPoint(x, y);
 
-      const cellSize = LOUPE_SIZE / GRID_PIXELS;
+      overlay.style.pointerEvents = "auto";
+      overlay.style.visibility = "visible";
 
-      // Ratio de pantalla a canvas
-      const scaleX = canvasRef.current.width / canvasRef.current.clientWidth;
-      const scaleY = canvasRef.current.height / canvasRef.current.clientHeight;
+      if (!el) return null;
 
-      const srcX = Math.round(x * scaleX);
-      const srcY = Math.round(y * scaleY);
+      // 1. ¿Es una imagen?
+      if (el.tagName === "IMG") {
+        const color = getColorFromImage(el, x, y);
+        if (color) return color;
+      }
 
-      // Dibujar cada pixel ampliado
-      for (let row = 0; row < GRID_PIXELS; row++) {
-        for (let col = 0; col < GRID_PIXELS; col++) {
-          const px = srcX + (col - halfGrid);
-          const py = srcY + (row - halfGrid);
+      // 2. ¿Es un canvas?
+      if (el.tagName === "CANVAS") {
+        const color = getColorFromCanvas(el, x, y);
+        if (color) return color;
+      }
 
-          let color = "#000";
-          if (
-            px >= 0 &&
-            px < canvasRef.current.width &&
-            py >= 0 &&
-            py < canvasRef.current.height
-          ) {
-            const pixel = srcCtx.getImageData(px, py, 1, 1).data;
-            color = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`;
-          }
-
-          loupeCtx.fillStyle = color;
-          loupeCtx.fillRect(
-            col * cellSize,
-            row * cellSize,
-            cellSize,
-            cellSize
-          );
+      // 3. ¿Tiene una imagen de fondo CSS?
+      const bgImage = window.getComputedStyle(el).backgroundImage;
+      if (bgImage && bgImage !== "none") {
+        // Intentar encontrar una <img> hija o el propio background
+        const img = el.querySelector("img");
+        if (img) {
+          const color = getColorFromImage(img, x, y);
+          if (color) return color;
         }
       }
 
-      // Dibujar cuadrícula sutil
-      loupeCtx.strokeStyle = "rgba(255,255,255,0.15)";
-      loupeCtx.lineWidth = 0.5;
-      for (let i = 1; i < GRID_PIXELS; i++) {
-        loupeCtx.beginPath();
-        loupeCtx.moveTo(i * cellSize, 0);
-        loupeCtx.lineTo(i * cellSize, LOUPE_SIZE);
-        loupeCtx.stroke();
-        loupeCtx.beginPath();
-        loupeCtx.moveTo(0, i * cellSize);
-        loupeCtx.lineTo(LOUPE_SIZE, i * cellSize);
-        loupeCtx.stroke();
-      }
-
-      // Resaltar pixel central (el seleccionado)
-      const centerX = halfGrid * cellSize;
-      const centerY = halfGrid * cellSize;
-      loupeCtx.strokeStyle = "#fff";
-      loupeCtx.lineWidth = 2;
-      loupeCtx.strokeRect(centerX, centerY, cellSize, cellSize);
-      loupeCtx.strokeStyle = "#000";
-      loupeCtx.lineWidth = 1;
-      loupeCtx.strokeRect(
-        centerX - 1,
-        centerY - 1,
-        cellSize + 2,
-        cellSize + 2
-      );
+      // 4. Fallback: color CSS del elemento o sus padres
+      return getColorFromCSS(el);
     },
-    [LOUPE_SIZE, GRID_PIXELS]
+    [getColorFromImage, getColorFromCanvas, getColorFromCSS]
   );
 
-  // Handler del touch/move
-  const handleInteraction = useCallback(
-    (clientX, clientY) => {
-      const color = getColorAtPosition(clientX, clientY);
-      if (color) {
-        setCurrentColor(color);
-        setTouchPos({ x: clientX, y: clientY });
-        drawLoupe(clientX, clientY);
-      }
-    },
-    [getColorAtPosition, drawLoupe]
-  );
-
-  const handleTouchStart = useCallback(
+  const handleTouch = useCallback(
     (e) => {
       e.preventDefault();
       const touch = e.touches[0];
-      handleInteraction(touch.clientX, touch.clientY);
+      const color = getColorAt(touch.clientX, touch.clientY);
+      if (color) setCurrentColor(color);
     },
-    [handleInteraction]
-  );
-
-  const handleTouchMove = useCallback(
-    (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      handleInteraction(touch.clientX, touch.clientY);
-    },
-    [handleInteraction]
+    [getColorAt]
   );
 
   const handleTouchEnd = useCallback(
     (e) => {
       e.preventDefault();
-      if (currentColor) {
-        onColorPick(currentColor);
-      }
+      if (currentColor) onColorPick(currentColor);
     },
     [currentColor, onColorPick]
   );
 
-  // Click (para pruebas en escritorio también)
   const handleClick = useCallback(
     (e) => {
-      const color = getColorAtPosition(e.clientX, e.clientY);
-      if (color) {
-        onColorPick(color);
-      }
+      const color = getColorAt(e.clientX, e.clientY);
+      if (color) onColorPick(color);
     },
-    [getColorAtPosition, onColorPick]
+    [getColorAt, onColorPick]
   );
 
   const handleMouseMove = useCallback(
     (e) => {
-      handleInteraction(e.clientX, e.clientY);
+      const color = getColorAt(e.clientX, e.clientY);
+      if (color) setCurrentColor(color);
     },
-    [handleInteraction]
+    [getColorAt]
   );
-
-  // Calcular posición de la lupa (por encima del dedo, centrada)
-  const getLoupePosition = () => {
-    if (!touchPos) return { display: "none" };
-    const offsetY = -LOUPE_SIZE - 40; // Encima del dedo
-    let left = touchPos.x - LOUPE_SIZE / 2;
-    let top = touchPos.y + offsetY;
-
-    // Asegurar que no se salga de la pantalla
-    if (left < 8) left = 8;
-    if (left + LOUPE_SIZE > window.innerWidth - 8)
-      left = window.innerWidth - LOUPE_SIZE - 8;
-    if (top < 8) top = touchPos.y + 60; // Si no cabe arriba, mostrar abajo
-
-    return { left, top };
-  };
 
   return createPortal(
     <div
+      ref={overlayRef}
       data-eyedropper-overlay="true"
+      onTouchStart={handleTouch}
+      onTouchMove={handleTouch}
+      onTouchEnd={handleTouchEnd}
+      onClick={handleClick}
+      onMouseMove={handleMouseMove}
       style={{
         position: "fixed",
         inset: 0,
         zIndex: 99999,
         touchAction: "none",
         cursor: "crosshair",
+        background: "transparent",
       }}
     >
-      {/* Indicador de carga */}
-      {!ready && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(0,0,0,0.8)",
-            color: "#fff",
-            fontSize: 16,
-            fontFamily: "system-ui, sans-serif",
-            gap: 12,
-          }}
-        >
-          <span
-            style={{
-              width: 24,
-              height: 24,
-              border: "3px solid rgba(255,255,255,0.3)",
-              borderTopColor: "#fff",
-              borderRadius: "50%",
-              animation: "eyedropper-spin 0.8s linear infinite",
-            }}
-          />
-          Capturando pantalla...
-        </div>
-      )}
-
-      {/* Canvas con la captura */}
-      <canvas
-        ref={canvasRef}
+      {/* Barra inferior con preview */}
+      <div
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
-          width: "100%",
-          height: "100%",
-          display: ready ? "block" : "none",
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 16px",
+          paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+          background: "rgba(0,0,0,0.85)",
+          backdropFilter: "blur(12px)",
+          borderTop: "1px solid rgba(255,255,255,0.15)",
+          gap: 10,
         }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleClick}
-        onMouseMove={handleMouseMove}
-      />
-
-      {/* Lupa */}
-      {ready && touchPos && (
-        <div
-          style={{
-            position: "fixed",
-            ...getLoupePosition(),
-            width: LOUPE_SIZE,
-            height: LOUPE_SIZE,
-            borderRadius: "50%",
-            overflow: "hidden",
-            border: "3px solid #fff",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.3)",
-            pointerEvents: "none",
-          }}
-        >
-          <canvas
-            ref={loupeCanvasRef}
-            width={LOUPE_SIZE}
-            height={LOUPE_SIZE}
-            style={{ width: "100%", height: "100%", borderRadius: "50%" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 6,
+              border: "2px solid rgba(255,255,255,0.4)",
+              background: currentColor || "transparent",
+              transition: "background 0.05s",
+            }}
           />
-        </div>
-      )}
-
-      {/* Barra inferior con preview de color y botones */}
-      {ready && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "12px 16px",
-            paddingBottom: "max(12px, env(safe-area-inset-bottom))",
-            background: "rgba(0,0,0,0.85)",
-            backdropFilter: "blur(12px)",
-            borderTop: "1px solid rgba(255,255,255,0.15)",
-            gap: 12,
-          }}
-        >
-          {/* Preview del color */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                border: "2px solid rgba(255,255,255,0.4)",
-                background: currentColor || "transparent",
-                transition: "background 0.1s",
-              }}
-            />
-            <span
-              style={{
-                color: "#fff",
-                fontFamily: "monospace",
-                fontSize: 15,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                minWidth: 80,
-              }}
-            >
-              {currentColor || "—"}
-            </span>
-          </div>
-
-          {/* Instrucción */}
           <span
             style={{
-              color: "rgba(255,255,255,0.6)",
-              fontSize: 12,
-              fontFamily: "system-ui, sans-serif",
-              textAlign: "center",
-              flex: 1,
-            }}
-          >
-            Toca para seleccionar un color
-          </span>
-
-          {/* Botón cancelar */}
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              background: "rgba(255,255,255,0.15)",
               color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "8px 16px",
+              fontFamily: "monospace",
               fontSize: 14,
               fontWeight: 600,
-              fontFamily: "system-ui, sans-serif",
-              cursor: "pointer",
+              textTransform: "uppercase",
             }}
           >
-            ✕
-          </button>
+            {currentColor || "—"}
+          </span>
         </div>
-      )}
 
-      {/* Animación de spinner */}
-      <style>{`
-        @keyframes eyedropper-spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+        <span
+          style={{
+            color: "rgba(255,255,255,0.5)",
+            fontSize: 11,
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          Arrastra y suelta
+        </span>
+
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            background: "rgba(255,255,255,0.15)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "system-ui, sans-serif",
+            cursor: "pointer",
+          }}
+        >
+          ✕
+        </button>
+      </div>
     </div>,
     document.body
   );
