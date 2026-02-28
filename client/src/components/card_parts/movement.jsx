@@ -1,4 +1,4 @@
-export default function Movement({ type, level = "none" }) {
+export default function Movement({ type, level = "none", movName, onNameChange, desc, onDescChange, dmg, onDmgChange }) {
   // Mapeo de iconos por tipo
   const TYPE_ICONS = {
     "active-attack": "☆",
@@ -22,31 +22,19 @@ export default function Movement({ type, level = "none" }) {
     "pasive-hab": <p className="text-2xl">⊙</p>
   };
 
-  /**
-   * Renderiza el icono correspondiente al tipo
-   * @returns {string} Icono del tipo
-   */
   const renderTypeIcon = () => TYPE_ICONS[type] || "";
-
-  /**
-   * Renderiza el icono correspondiente al nivel
-   * @returns {JSX.Element|string} Componente del nivel o string vacío
-   */
   const renderLevelIcon = () => LEVEL_ICONS[level] || "";
 
-  /**
-   * Renderiza el contenido del lado derecho según el tipo
-   * @returns {JSX.Element} Componente correspondiente al tipo o input por defecto
-   */
   const renderRightSide = () => {
     return RIGHT_SIDE_CONTENT[type] || (
       <input
         type="number"
-        defaultValue={100}
+        value={dmg}
         min={0}
         max={10000}
         step={25}
         className="text-right max-w-15"
+        onChange={(e) => onDmgChange(Number(e.target.value))}
       />
     );
   };
@@ -66,8 +54,9 @@ export default function Movement({ type, level = "none" }) {
           type="text"
           name="name"
           id="name"
-          defaultValue="Movement Name"
+          value={movName}
           className="outline-none min-w-0 w-5/6 font-bold"
+          onChange={(e) => onNameChange(e.target.value)}
         />
       </div>
       
@@ -78,8 +67,9 @@ export default function Movement({ type, level = "none" }) {
         <div className="flex flex-col flex-1 mr-4">
           <textarea
             name="descripcion"
-            defaultValue="Description Movement"
+            value={desc}
             className="text-xs outline-none resize-none min-h-11 leading-tight ms-2 overflow-hidden"
+            onChange={(e) => onDescChange(e.target.value)}
           />
         </div>
         

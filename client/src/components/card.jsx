@@ -31,6 +31,24 @@ const Card = forwardRef(
       //IMAGEN
       image,
       onImageChange,
+
+      //TEXTOS
+      characterName,
+      onCharacterNameChange,
+      hp,
+      onHpChange,
+      movementOneName,
+      onMovementOneNameChange,
+      movementOneDesc,
+      onMovementOneDescChange,
+      movementOneDmg,
+      onMovementOneDmgChange,
+      movementTwoName,
+      onMovementTwoNameChange,
+      movementTwoDesc,
+      onMovementTwoDescChange,
+      movementTwoDmg,
+      onMovementTwoDmgChange,
     },
     ref,
   ) => {
@@ -54,7 +72,13 @@ const Card = forwardRef(
         className="border-8 flex flex-col w-90 h-150 m-3"
         style={cardStyles}
       >
-        <Header genLogo={genLogo} />
+        <Header
+          genLogo={genLogo}
+          characterName={characterName}
+          onCharacterNameChange={onCharacterNameChange}
+          hp={hp}
+          onHpChange={onHpChange}
+        />
 
         <ImageContainer
           image={image}
@@ -67,6 +91,18 @@ const Card = forwardRef(
           levelMovementOne={levelMovementOne}
           typeMovementTwo={typeMovementTwo}
           levelMovementTwo={levelMovementTwo}
+          movementOneName={movementOneName}
+          onMovementOneNameChange={onMovementOneNameChange}
+          movementOneDesc={movementOneDesc}
+          onMovementOneDescChange={onMovementOneDescChange}
+          movementOneDmg={movementOneDmg}
+          onMovementOneDmgChange={onMovementOneDmgChange}
+          movementTwoName={movementTwoName}
+          onMovementTwoNameChange={onMovementTwoNameChange}
+          movementTwoDesc={movementTwoDesc}
+          onMovementTwoDescChange={onMovementTwoDescChange}
+          movementTwoDmg={movementTwoDmg}
+          onMovementTwoDmgChange={onMovementTwoDmgChange}
         />
 
         <Footer

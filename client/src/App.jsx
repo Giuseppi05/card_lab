@@ -18,9 +18,11 @@ function App() {
       text: "#000",
     },
     texture: "",
+    characterName: "Character Name",
+    hp: 100,
     movements: {
-      one: { type: "active-attack", level: "none" },
-      two: { type: "active-attack", level: "none" },
+      one: { type: "active-attack", level: "none", name: "Movement Name", desc: "Description Movement", dmg: 100 },
+      two: { type: "active-attack", level: "none", name: "Movement Name", desc: "Description Movement", dmg: 100 },
     },
     logos: {
       gen: "logos/g5.png",
@@ -66,6 +68,16 @@ function App() {
   const [typeMovementTwo, setTypeMovementTwo] = useState(() => loadState("typeMovementTwo", INITIAL_STATE.movements.two.type));
   const [levelMovementTwo, setLevelMovementTwo] = useState(() => loadState("levelMovementTwo", INITIAL_STATE.movements.two.level));
 
+  // Estados para textos
+  const [characterName, setCharacterName] = useState(() => loadState("characterName", INITIAL_STATE.characterName));
+  const [hp, setHp] = useState(() => loadState("hp", INITIAL_STATE.hp));
+  const [movementOneName, setMovementOneName] = useState(() => loadState("movementOneName", INITIAL_STATE.movements.one.name));
+  const [movementOneDesc, setMovementOneDesc] = useState(() => loadState("movementOneDesc", INITIAL_STATE.movements.one.desc));
+  const [movementOneDmg, setMovementOneDmg] = useState(() => loadState("movementOneDmg", INITIAL_STATE.movements.one.dmg));
+  const [movementTwoName, setMovementTwoName] = useState(() => loadState("movementTwoName", INITIAL_STATE.movements.two.name));
+  const [movementTwoDesc, setMovementTwoDesc] = useState(() => loadState("movementTwoDesc", INITIAL_STATE.movements.two.desc));
+  const [movementTwoDmg, setMovementTwoDmg] = useState(() => loadState("movementTwoDmg", INITIAL_STATE.movements.two.dmg));
+
   // Estado para logos
   const [genLogo, setGenLogo] = useState(() => loadState("genLogo", INITIAL_STATE.logos.gen));
   const [longLogo, setLongLogo] = useState(() => loadState("longLogo", INITIAL_STATE.logos.long));
@@ -86,6 +98,14 @@ function App() {
   useEffect(() => saveState("levelMovementOne", levelMovementOne), [levelMovementOne]);
   useEffect(() => saveState("typeMovementTwo", typeMovementTwo), [typeMovementTwo]);
   useEffect(() => saveState("levelMovementTwo", levelMovementTwo), [levelMovementTwo]);
+  useEffect(() => saveState("characterName", characterName), [characterName]);
+  useEffect(() => saveState("hp", hp), [hp]);
+  useEffect(() => saveState("movementOneName", movementOneName), [movementOneName]);
+  useEffect(() => saveState("movementOneDesc", movementOneDesc), [movementOneDesc]);
+  useEffect(() => saveState("movementOneDmg", movementOneDmg), [movementOneDmg]);
+  useEffect(() => saveState("movementTwoName", movementTwoName), [movementTwoName]);
+  useEffect(() => saveState("movementTwoDesc", movementTwoDesc), [movementTwoDesc]);
+  useEffect(() => saveState("movementTwoDmg", movementTwoDmg), [movementTwoDmg]);
   useEffect(() => saveState("genLogo", genLogo), [genLogo]);
   useEffect(() => saveState("longLogo", longLogo), [longLogo]);
   useEffect(() => saveState("classLogo", classLogo), [classLogo]);
@@ -112,6 +132,14 @@ function App() {
       setLevelMovementOne(INITIAL_STATE.movements.one.level);
       setTypeMovementTwo(INITIAL_STATE.movements.two.type);
       setLevelMovementTwo(INITIAL_STATE.movements.two.level);
+      setCharacterName(INITIAL_STATE.characterName);
+      setHp(INITIAL_STATE.hp);
+      setMovementOneName(INITIAL_STATE.movements.one.name);
+      setMovementOneDesc(INITIAL_STATE.movements.one.desc);
+      setMovementOneDmg(INITIAL_STATE.movements.one.dmg);
+      setMovementTwoName(INITIAL_STATE.movements.two.name);
+      setMovementTwoDesc(INITIAL_STATE.movements.two.desc);
+      setMovementTwoDmg(INITIAL_STATE.movements.two.dmg);
       setGenLogo(INITIAL_STATE.logos.gen);
       setLongLogo(INITIAL_STATE.logos.long);
       setClassLogo(INITIAL_STATE.logos.class);
@@ -202,6 +230,22 @@ function App() {
     mark,
     image,
     onImageChange: setImage,
+    characterName,
+    onCharacterNameChange: setCharacterName,
+    hp,
+    onHpChange: setHp,
+    movementOneName,
+    onMovementOneNameChange: setMovementOneName,
+    movementOneDesc,
+    onMovementOneDescChange: setMovementOneDesc,
+    movementOneDmg,
+    onMovementOneDmgChange: setMovementOneDmg,
+    movementTwoName,
+    onMovementTwoNameChange: setMovementTwoName,
+    movementTwoDesc,
+    onMovementTwoDescChange: setMovementTwoDesc,
+    movementTwoDmg,
+    onMovementTwoDmgChange: setMovementTwoDmg,
   };
 
   // Props agrupadas para Panel
