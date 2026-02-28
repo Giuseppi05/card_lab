@@ -2,8 +2,18 @@ import { useRef, useCallback, useEffect, useMemo, useState } from "react";
 
 export default function ImageContainer({ image, onImageChange, imageBorderColor }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [scale, setScale] = useState(() => {
+    try {
+      const s = localStorage.getItem("card_lab_imageScale");
+      return s ? JSON.parse(s) : 1;
+    } catch { return 1; }
+  });
+  const [position, setPosition] = useState(() => {
+    try {
+      const p = localStorage.getItem("card_lab_imagePosition");
+      return p ? JSON.parse(p) : { x: 0, y: 0 };
+    } catch { return { x: 0, y: 0 }; }
+  });
   const [dragging, setDragging] = useState(false);
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
   const [minScale, setMinScale] = useState(1);
@@ -97,7 +107,18 @@ export default function ImageContainer({ image, onImageChange, imageBorderColor 
     [clickTimeout, isEditing]
   );
 
+  // Persistencia de zoom y posicion
   useEffect(() => {
+    localStorage.setItem("card_lab_imageScale", JSON.stringify(scale));
+  }, [scale]);
+
+  useEffect(() => {
+    localStorage.setItem("card_lab_imagePosition", JSON.stringify(position));
+  }, [position]);
+
+  const prevImageRef = useRef(image);
+
+  const calculateFitAndResetIfNeeded = useCallback(() => {
     if (containerRef.current && imgRef.current) {
       const contWidth = containerRef.current.offsetWidth;
       const contHeight = containerRef.current.offsetHeight;
@@ -110,11 +131,21 @@ export default function ImageContainer({ image, onImageChange, imageBorderColor 
         const coverScale = Math.max(scaleX, scaleY);
 
         setMinScale(coverScale);
-        setScale(coverScale);
-        setPosition({ x: 0, y: 0 });
+
+        // Si la imagen en memoria cambió o no se ha definido el zoom en storage, recalculamos
+        if (prevImageRef.current !== image || !localStorage.getItem("card_lab_imageScale")) {
+          setScale(coverScale);
+          setPosition({ x: 0, y: 0 });
+          prevImageRef.current = image;
+        }
       }
     }
   }, [image]);
+
+  useEffect(() => {
+    // Intentamos calcular al instante si ya está en caché o es base64
+    calculateFitAndResetIfNeeded();
+  }, [calculateFitAndResetIfNeeded]);
 
   useEffect(() => {
     return () => {
@@ -230,6 +261,7 @@ export default function ImageContainer({ image, onImageChange, imageBorderColor 
           className="card-image select-none"
           style={imageTransformStyle}
           draggable={false}
+          onLoad={calculateFitAndResetIfNeeded}
         />
         {isEditing && (
           <div className="absolute top-1 left-1 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none">

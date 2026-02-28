@@ -1,7 +1,7 @@
 import "./App.css";
 import Card from "./components/card";
 import Panel from "./components/panel";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toCanvas } from "html-to-image";
 
 /**
@@ -32,48 +32,105 @@ function App() {
     image: "placeholder_image.png",
   };
 
+  // Funciones para LocalStorage
+  const loadState = (key, fallback) => {
+    try {
+      const saved = localStorage.getItem(`card_lab_${key}`);
+      return saved !== null ? JSON.parse(saved) : fallback;
+    } catch (e) {
+      console.error(`Error loading state ${key}`, e);
+      return fallback;
+    }
+  };
+
+  const saveState = (key, value) => {
+    try {
+      localStorage.setItem(`card_lab_${key}`, JSON.stringify(value));
+    } catch (e) {
+      console.error(`Error saving state ${key}`, e);
+    }
+  };
+
   // Estados para colores
-  const [bgColor, setBgColor] = useState(INITIAL_STATE.colors.bg);
-  const [borderColor, setBorderColor] = useState(INITIAL_STATE.colors.border);
-  const [imageBorderColor, setImageBorderColor] = useState(
-    INITIAL_STATE.colors.imageBorder
-  );
-  const [textColor, setTextColor] = useState(INITIAL_STATE.colors.text);
+  const [bgColor, setBgColor] = useState(() => loadState("bgColor", INITIAL_STATE.colors.bg));
+  const [borderColor, setBorderColor] = useState(() => loadState("borderColor", INITIAL_STATE.colors.border));
+  const [imageBorderColor, setImageBorderColor] = useState(() => loadState("imageBorderColor", INITIAL_STATE.colors.imageBorder));
+  const [textColor, setTextColor] = useState(() => loadState("textColor", INITIAL_STATE.colors.text));
 
   // Estado para textura
-  const [texture, setTexture] = useState(INITIAL_STATE.texture);
+  const [texture, setTexture] = useState(() => loadState("texture", INITIAL_STATE.texture));
 
   // Estados para movimientos
-  const [typeMovementOne, setTypeMovementOne] = useState(
-    INITIAL_STATE.movements.one.type
-  );
-  const [levelMovementOne, setLevelMovementOne] = useState(
-    INITIAL_STATE.movements.one.level
-  );
-  const [typeMovementTwo, setTypeMovementTwo] = useState(
-    INITIAL_STATE.movements.two.type
-  );
-  const [levelMovementTwo, setLevelMovementTwo] = useState(
-    INITIAL_STATE.movements.two.level
-  );
+  const [typeMovementOne, setTypeMovementOne] = useState(() => loadState("typeMovementOne", INITIAL_STATE.movements.one.type));
+  const [levelMovementOne, setLevelMovementOne] = useState(() => loadState("levelMovementOne", INITIAL_STATE.movements.one.level));
+  const [typeMovementTwo, setTypeMovementTwo] = useState(() => loadState("typeMovementTwo", INITIAL_STATE.movements.two.type));
+  const [levelMovementTwo, setLevelMovementTwo] = useState(() => loadState("levelMovementTwo", INITIAL_STATE.movements.two.level));
 
   // Estado para logos
-  const [genLogo, setGenLogo] = useState(INITIAL_STATE.logos.gen);
-  const [longLogo, setLongLogo] = useState(INITIAL_STATE.logos.long);
-  const [classLogo, setClassLogo] = useState(INITIAL_STATE.logos.class);
-  const [affiliationLogo, setAffiliationLogo] = useState(
-    INITIAL_STATE.logos.affiliation
-  );
-  const [mark, setMark] = useState(INITIAL_STATE.logos.mark)
+  const [genLogo, setGenLogo] = useState(() => loadState("genLogo", INITIAL_STATE.logos.gen));
+  const [longLogo, setLongLogo] = useState(() => loadState("longLogo", INITIAL_STATE.logos.long));
+  const [classLogo, setClassLogo] = useState(() => loadState("classLogo", INITIAL_STATE.logos.class));
+  const [affiliationLogo, setAffiliationLogo] = useState(() => loadState("affiliationLogo", INITIAL_STATE.logos.affiliation));
+  const [mark, setMark] = useState(() => loadState("mark", INITIAL_STATE.logos.mark));
 
   //Estado para imagen
-  const [image, setImage] = useState(INITIAL_STATE.image);
+  const [image, setImage] = useState(() => loadState("image", INITIAL_STATE.image));
+
+  // Guardar cambios en el localStorage automáticamente
+  useEffect(() => saveState("bgColor", bgColor), [bgColor]);
+  useEffect(() => saveState("borderColor", borderColor), [borderColor]);
+  useEffect(() => saveState("imageBorderColor", imageBorderColor), [imageBorderColor]);
+  useEffect(() => saveState("textColor", textColor), [textColor]);
+  useEffect(() => saveState("texture", texture), [texture]);
+  useEffect(() => saveState("typeMovementOne", typeMovementOne), [typeMovementOne]);
+  useEffect(() => saveState("levelMovementOne", levelMovementOne), [levelMovementOne]);
+  useEffect(() => saveState("typeMovementTwo", typeMovementTwo), [typeMovementTwo]);
+  useEffect(() => saveState("levelMovementTwo", levelMovementTwo), [levelMovementTwo]);
+  useEffect(() => saveState("genLogo", genLogo), [genLogo]);
+  useEffect(() => saveState("longLogo", longLogo), [longLogo]);
+  useEffect(() => saveState("classLogo", classLogo), [classLogo]);
+  useEffect(() => saveState("affiliationLogo", affiliationLogo), [affiliationLogo]);
+  useEffect(() => saveState("mark", mark), [mark]);
+  // Nota: No es recomendable guardar la imagen base64 completa en localStorage siempre por su límite de 5MB,
+  // pero lo haremos para esta demostración. Puede requerir compresión de imagen si es muy pesada.
+  useEffect(() => {
+    try {
+      saveState("image", image);
+    } catch {
+       console.log("Image might be too large for localstorage!");
+    }
+  }, [image]);
+
+  const resetToDefault = () => {
+    if(confirm("¿Estás seguro de que deseas limpiar la carta a los ajustes de fábrica?")) {
+      setBgColor(INITIAL_STATE.colors.bg);
+      setBorderColor(INITIAL_STATE.colors.border);
+      setImageBorderColor(INITIAL_STATE.colors.imageBorder);
+      setTextColor(INITIAL_STATE.colors.text);
+      setTexture(INITIAL_STATE.texture);
+      setTypeMovementOne(INITIAL_STATE.movements.one.type);
+      setLevelMovementOne(INITIAL_STATE.movements.one.level);
+      setTypeMovementTwo(INITIAL_STATE.movements.two.type);
+      setLevelMovementTwo(INITIAL_STATE.movements.two.level);
+      setGenLogo(INITIAL_STATE.logos.gen);
+      setLongLogo(INITIAL_STATE.logos.long);
+      setClassLogo(INITIAL_STATE.logos.class);
+      setAffiliationLogo(INITIAL_STATE.logos.affiliation);
+      setMark(INITIAL_STATE.logos.mark);
+      setImage(INITIAL_STATE.image);
+      localStorage.clear();
+    }
+  };
+
+  // Estado para el loader de descarga
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const cardRef = useRef(null);
 
   // Luego reemplaza handleDownload con esta versión:
   const handleDownload = async () => {
-    if (cardRef.current === null) return;
+    if (cardRef.current === null || isDownloading) return;
+    setIsDownloading(true);
 
     try {
       const originalElement = cardRef.current;
@@ -108,8 +165,14 @@ function App() {
             .toLowerCase();
           link.download = `${fileName}.png`;
           link.href = url;
+          document.body.appendChild(link); // Añadir al DOM para iOS/Mobile
           link.click();
-          URL.revokeObjectURL(url);
+          document.body.removeChild(link); // Remover del DOM
+          // 2. Darle margen de tiempo al navegador para procesar la descarga antes de limpiar la memoria
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+            setIsDownloading(false);
+          }, 100);
         },
         "image/png",
         1.0
@@ -117,6 +180,7 @@ function App() {
     } catch (err) {
       console.error("Error exportando la carta:", err);
       alert("Error al descargar la imagen. Intenta de nuevo.");
+      setIsDownloading(false);
     }
   };
 
@@ -186,6 +250,10 @@ function App() {
 
     // Handler Image
     onDownloadCard: handleDownload,
+    isDownloading,
+
+    // Handler Reset
+    onResetData: resetToDefault,
   };
 
   /**

@@ -1,4 +1,4 @@
-import { FiSettings, FiZap, FiImage, FiDownload } from "react-icons/fi";
+import { FiSettings, FiZap, FiImage, FiDownload, FiTrash2 } from "react-icons/fi";
 
 // Imports de data
 import TEXTURES from "../data/textures.js";
@@ -118,6 +118,8 @@ function Panel({
   mark,
   // Handler Image
   onDownloadCard,
+  isDownloading,
+  onResetData,
 }) {
   // Mapeo de valores para facilitar acceso dinámico
   const values = {
@@ -221,11 +223,23 @@ function Panel({
 
   return (
     <div className="w-full max-w-4xl mx-auto p-0 lg:p-6 bg-base-200 min-h-screen">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2">Panel de Configuración</h2>
-        <p className="text-base-content/70">
-          Personaliza tu carta de One Piece
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h2 className="text-3xl font-bold mb-2">Panel de Configuración</h2>
+          <p className="text-base-content/70">
+            Personaliza tu carta de One Piece
+          </p>
+        </div>
+        <button
+          onClick={onResetData}
+          disabled={isDownloading}
+          className="btn btn-outline btn-error btn-sm shadow-sm"
+          aria-label="Reiniciar ajustes de fábrica"
+          title="Limpiar Carta"
+        >
+          <FiTrash2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Limpiar</span>
+        </button>
       </div>
 
       {/* Acordeón de configuración */}
@@ -346,11 +360,21 @@ function Panel({
       <div className="fixed bottom-6 right-6">
         <button
           onClick={onDownloadCard}
+          disabled={isDownloading}
           className="btn btn-primary btn-lg shadow-xl hover:shadow-2xl transition-all duration-300"
           aria-label="Descargar carta en PNG"
         >
-          <FiDownload className="w-5 h-5" />
-          Descargar PNG
+          {isDownloading ? (
+            <>
+              <span className="loading loading-spinner"></span>
+              Descargando...
+            </>
+          ) : (
+            <>
+              <FiDownload className="w-5 h-5" />
+              Descargar PNG
+            </>
+          )}
         </button>
       </div>
     </div>

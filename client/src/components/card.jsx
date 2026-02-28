@@ -1,8 +1,5 @@
 import "../styles/card.css";
-import {
-  useMemo,
-  forwardRef,
-} from "react";
+import { useMemo, forwardRef } from "react";
 import Header from "./card_parts/header";
 import ImageContainer from "./card_parts/image";
 import MovsContainer from "./card_parts/movsContainer";
@@ -17,7 +14,7 @@ const Card = forwardRef(
       imageBorderColor,
       textColor,
       texture,
-      
+
       //MOVIMIENTOS
       typeMovementOne,
       typeMovementTwo,
@@ -30,12 +27,12 @@ const Card = forwardRef(
       longLogo,
       affiliationLogo,
       mark,
-      
+
       //IMAGEN
       image,
       onImageChange,
     },
-    ref
+    ref,
   ) => {
     // Estilos memoizados para optimizar renders
     const cardStyles = useMemo(
@@ -48,7 +45,7 @@ const Card = forwardRef(
         backgroundSize: "cover",
         boxShadow: "inset 0 0 5px rgba(0,0,0,0.5)",
       }),
-      [backgroundColor, borderColor, textColor, texture]
+      [backgroundColor, borderColor, textColor, texture],
     );
 
     return (
@@ -64,15 +61,15 @@ const Card = forwardRef(
           onImageChange={onImageChange}
           imageBorderColor={imageBorderColor}
         />
-        
-        <MovsContainer 
+
+        <MovsContainer
           typeMovementOne={typeMovementOne}
           levelMovementOne={levelMovementOne}
           typeMovementTwo={typeMovementTwo}
           levelMovementTwo={levelMovementTwo}
         />
 
-        <Footer 
+        <Footer
           classLogo={classLogo}
           longLogo={longLogo}
           affiliationLogo={affiliationLogo}
@@ -80,7 +77,7 @@ const Card = forwardRef(
         />
       </div>
     );
-  }
+  },
 );
 
 Card.displayName = "Card";
