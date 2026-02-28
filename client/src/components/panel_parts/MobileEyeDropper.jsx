@@ -1,76 +1,23 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { toCanvas } from "html-to-image";
 
 /**
  * Cuentagotas móvil con lupa.
- * Captura el viewport como canvas en segundo plano mientras
- * el overlay ya es interactivo. Una vez listo el canvas,
- * lee píxeles con precisión y muestra una lupa.
+ * Sin captura de pantalla. Usa elementFromPoint para leer colores
+ * y muestrea una cuadrícula de puntos para la lupa.
+ * Para <img> lee el píxel real del canvas temporal.
  */
 export default function MobileEyeDropper({ onColorPick, onCancel }) {
   const [currentColor, setCurrentColor] = useState(null);
   const [touchPos, setTouchPos] = useState(null);
   const overlayRef = useRef(null);
   const loupeCanvasRef = useRef(null);
-  const screenshotRef = useRef(null); // canvas capturado
-  const screenshotCtxRef = useRef(null);
+  const tempCanvas = useRef(document.createElement("canvas"));
+  const imgCacheRef = useRef({ src: null, ctx: null, natW: 0, natH: 0 });
 
   const LOUPE_SIZE = 110;
-  const GRID_PIXELS = 11;
-
-  // Capturar la página en segundo plano al montar
-  useEffect(() => {
-    let cancelled = false;
-
-    const capture = async () => {
-      try {
-        const overlay = overlayRef.current;
-        if (overlay) {
-          overlay.style.display = "none";
-        }
-
-        const target = document.body;
-        const canvas = await toCanvas(target, {
-          cacheBust: true,
-          pixelRatio: 1,
-          width: window.innerWidth,
-          height: window.innerHeight,
-          style: { margin: "0", padding: "0" },
-          filter: (node) => {
-            if (node.dataset?.eyedropperOverlay) return false;
-            return true;
-          },
-        });
-
-        if (overlay) {
-          overlay.style.display = "";
-        }
-
-        if (cancelled) return;
-
-        // Recortar al viewport visible
-        const finalCanvas = document.createElement("canvas");
-        finalCanvas.width = window.innerWidth;
-        finalCanvas.height = window.innerHeight;
-        const ctx = finalCanvas.getContext("2d", { willReadFrequently: true });
-        ctx.drawImage(
-          canvas,
-          0, window.scrollY, window.innerWidth, window.innerHeight,
-          0, 0, window.innerWidth, window.innerHeight
-        );
-
-        screenshotRef.current = finalCanvas;
-        screenshotCtxRef.current = ctx;
-      } catch (err) {
-        console.error("Eyedropper capture error:", err);
-      }
-    };
-
-    // Pequeño delay para que animaciones de cierre del drawer terminen
-    const t = setTimeout(capture, 50);
-    return () => { cancelled = true; clearTimeout(t); };
-  }, []);
+  const GRID = 9; // 9×9 puntos muestreados
+  const SAMPLE_SPACING = 3; // px entre cada punto de muestreo
 
   const rgbToHex = (r, g, b) =>
     `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
@@ -81,109 +28,145 @@ export default function MobileEyeDropper({ onColorPick, onCancel }) {
     return m && m.length >= 3 ? rgbToHex(+m[0], +m[1], +m[2]) : null;
   };
 
-  // Leer color de la captura (pixel-perfect)
-  const getColorFromScreenshot = useCallback((x, y) => {
-    const ctx = screenshotCtxRef.current;
-    if (!ctx) return null;
+  // Leer píxel de una imagen (con caché para no redibujar cada frame)
+  const getPixelFromImage = useCallback((img, cx, cy) => {
     try {
-      const p = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+      const rect = img.getBoundingClientRect();
+      const natW = img.naturalWidth || img.width;
+      const natH = img.naturalHeight || img.height;
+      const px = Math.round(((cx - rect.left) / rect.width) * natW);
+      const py = Math.round(((cy - rect.top) / rect.height) * natH);
+      if (px < 0 || py < 0 || px >= natW || py >= natH) return null;
+
+      // Cachear el canvas si es la misma imagen
+      const cache = imgCacheRef.current;
+      if (cache.src !== img.src) {
+        const c = tempCanvas.current;
+        c.width = natW;
+        c.height = natH;
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, natW, natH);
+        cache.src = img.src;
+        cache.ctx = ctx;
+        cache.natW = natW;
+        cache.natH = natH;
+      }
+
+      const p = cache.ctx.getImageData(px, py, 1, 1).data;
       if (p[3] === 0) return null;
       return rgbToHex(p[0], p[1], p[2]);
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }, []);
 
-  // Fallback CSS
-  const getColorFromCSS = useCallback((x, y) => {
-    const overlay = overlayRef.current;
-    if (!overlay) return null;
-    overlay.style.pointerEvents = "none";
-    overlay.style.visibility = "hidden";
+  // Obtener color de un punto (sin tocar el overlay)
+  const samplePoint = useCallback((x, y) => {
     const el = document.elementFromPoint(x, y);
-    overlay.style.pointerEvents = "auto";
-    overlay.style.visibility = "visible";
-    if (!el) return "#ffffff";
+    if (!el) return "#f0f0f0";
 
+    // Si es imagen, leer píxel real
+    if (el.tagName === "IMG") {
+      const c = getPixelFromImage(el, x, y);
+      if (c) return c;
+    }
+
+    // Si es canvas
+    if (el.tagName === "CANVAS") {
+      try {
+        const rect = el.getBoundingClientRect();
+        const sx = Math.round((x - rect.left) * (el.width / rect.width));
+        const sy = Math.round((y - rect.top) * (el.height / rect.height));
+        const ctx = el.getContext("2d", { willReadFrequently: true });
+        const p = ctx.getImageData(sx, sy, 1, 1).data;
+        if (p[3] > 0) return rgbToHex(p[0], p[1], p[2]);
+      } catch {}
+    }
+
+    // CSS: subir por el DOM buscando un background sólido
     let node = el;
     while (node && node !== document.documentElement) {
       if (node.style?.backgroundColor) {
         const h = parseRgb(node.style.backgroundColor);
         if (h) return h;
       }
-      const bg = window.getComputedStyle(node).backgroundColor;
-      const h = parseRgb(bg);
+      const h = parseRgb(window.getComputedStyle(node).backgroundColor);
       if (h) return h;
       node = node.parentElement;
     }
     return "#ffffff";
-  }, []);
+  }, [getPixelFromImage]);
 
-  // Obtener color: priorizar captura, fallback a CSS
-  const getColorAt = useCallback(
-    (x, y) => {
-      const fromScreenshot = getColorFromScreenshot(x, y);
-      if (fromScreenshot) return fromScreenshot;
-      return getColorFromCSS(x, y);
-    },
-    [getColorFromScreenshot, getColorFromCSS]
-  );
-
-  // Dibujar lupa
-  const drawLoupe = useCallback((x, y) => {
+  // Muestrear cuadrícula y dibujar lupa
+  const updateLoupe = useCallback((cx, cy) => {
     const loupeCanvas = loupeCanvasRef.current;
-    const ctx = screenshotCtxRef.current;
-    if (!loupeCanvas || !ctx) return;
+    const overlay = overlayRef.current;
+    if (!loupeCanvas || !overlay) return;
 
     const lCtx = loupeCanvas.getContext("2d");
     loupeCanvas.width = LOUPE_SIZE;
     loupeCanvas.height = LOUPE_SIZE;
+    const cell = LOUPE_SIZE / GRID;
+    const half = Math.floor(GRID / 2);
 
-    const cell = LOUPE_SIZE / GRID_PIXELS;
-    const half = Math.floor(GRID_PIXELS / 2);
-    const sx = Math.round(x);
-    const sy = Math.round(y);
-    const sw = screenshotRef.current.width;
-    const sh = screenshotRef.current.height;
+    // Ocultar overlay UNA vez para muestrear todos los puntos
+    overlay.style.pointerEvents = "none";
+    overlay.style.visibility = "hidden";
 
-    for (let row = 0; row < GRID_PIXELS; row++) {
-      for (let col = 0; col < GRID_PIXELS; col++) {
-        const px = sx + (col - half);
-        const py = sy + (row - half);
-        let color = "#000";
-        if (px >= 0 && px < sw && py >= 0 && py < sh) {
-          const p = ctx.getImageData(px, py, 1, 1).data;
-          color = `rgb(${p[0]},${p[1]},${p[2]})`;
-        }
-        lCtx.fillStyle = color;
+    const colors = [];
+    for (let row = 0; row < GRID; row++) {
+      for (let col = 0; col < GRID; col++) {
+        const sx = cx + (col - half) * SAMPLE_SPACING;
+        const sy = cy + (row - half) * SAMPLE_SPACING;
+        colors.push(samplePoint(sx, sy));
+      }
+    }
+
+    overlay.style.pointerEvents = "auto";
+    overlay.style.visibility = "visible";
+
+    // Dibujar colores en la lupa
+    for (let row = 0; row < GRID; row++) {
+      for (let col = 0; col < GRID; col++) {
+        lCtx.fillStyle = colors[row * GRID + col];
         lCtx.fillRect(col * cell, row * cell, cell, cell);
       }
     }
 
-    // Cuadrícula
-    lCtx.strokeStyle = "rgba(255,255,255,0.12)";
+    // Cuadrícula sutil
+    lCtx.strokeStyle = "rgba(255,255,255,0.15)";
     lCtx.lineWidth = 0.5;
-    for (let i = 1; i < GRID_PIXELS; i++) {
+    for (let i = 1; i < GRID; i++) {
       lCtx.beginPath(); lCtx.moveTo(i * cell, 0); lCtx.lineTo(i * cell, LOUPE_SIZE); lCtx.stroke();
       lCtx.beginPath(); lCtx.moveTo(0, i * cell); lCtx.lineTo(LOUPE_SIZE, i * cell); lCtx.stroke();
     }
 
-    // Pixel central
-    const cx = half * cell, cy = half * cell;
+    // Pixel central resaltado
+    const cc = half * cell;
     lCtx.strokeStyle = "#fff";
-    lCtx.lineWidth = 2;
-    lCtx.strokeRect(cx, cy, cell, cell);
+    lCtx.lineWidth = 2.5;
+    lCtx.strokeRect(cc, cc, cell, cell);
     lCtx.strokeStyle = "#000";
     lCtx.lineWidth = 1;
-    lCtx.strokeRect(cx - 1, cy - 1, cell + 2, cell + 2);
-  }, []);
+    lCtx.strokeRect(cc - 1, cc - 1, cell + 2, cell + 2);
+  }, [samplePoint]);
 
   const handleInteraction = useCallback(
     (x, y) => {
-      const color = getColorAt(x, y);
-      if (color) setCurrentColor(color);
+      // Color central
+      const overlay = overlayRef.current;
+      if (!overlay) return;
+      overlay.style.pointerEvents = "none";
+      overlay.style.visibility = "hidden";
+      const color = samplePoint(x, y);
+      overlay.style.pointerEvents = "auto";
+      overlay.style.visibility = "visible";
+
+      setCurrentColor(color);
       setTouchPos({ x, y });
-      if (screenshotCtxRef.current) drawLoupe(x, y);
+      updateLoupe(x, y);
     },
-    [getColorAt, drawLoupe]
+    [samplePoint, updateLoupe]
   );
 
   const handleTouch = useCallback(
@@ -197,8 +180,17 @@ export default function MobileEyeDropper({ onColorPick, onCancel }) {
   );
 
   const handleClick = useCallback(
-    (e) => { const c = getColorAt(e.clientX, e.clientY); if (c) onColorPick(c); },
-    [getColorAt, onColorPick]
+    (e) => {
+      const overlay = overlayRef.current;
+      if (!overlay) return;
+      overlay.style.pointerEvents = "none";
+      overlay.style.visibility = "hidden";
+      const c = samplePoint(e.clientX, e.clientY);
+      overlay.style.pointerEvents = "auto";
+      overlay.style.visibility = "visible";
+      if (c) onColorPick(c);
+    },
+    [samplePoint, onColorPick]
   );
 
   const handleMouseMove = useCallback(
@@ -206,8 +198,8 @@ export default function MobileEyeDropper({ onColorPick, onCancel }) {
     [handleInteraction]
   );
 
-  // Posición de la lupa (encima del dedo)
-  const loupePos = (() => {
+  // Posición de lupa
+  const loupeStyle = (() => {
     if (!touchPos) return { display: "none" };
     let left = touchPos.x - LOUPE_SIZE / 2;
     let top = touchPos.y - LOUPE_SIZE - 40;
@@ -235,12 +227,12 @@ export default function MobileEyeDropper({ onColorPick, onCancel }) {
         background: "transparent",
       }}
     >
-      {/* Lupa */}
-      {touchPos && screenshotCtxRef.current && (
+      {/* Lupa (siempre visible al tocar) */}
+      {touchPos && (
         <div
           style={{
             position: "fixed",
-            ...loupePos,
+            ...loupeStyle,
             width: LOUPE_SIZE,
             height: LOUPE_SIZE,
             borderRadius: "50%",
