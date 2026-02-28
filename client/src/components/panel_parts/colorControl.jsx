@@ -7,14 +7,8 @@ export default function ColorControl(id, label, value, onChange) {
   const [isOpen, setIsOpen] = useState(false);
   const [recentColors, setRecentColors] = useState([]);
   const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
-  const [hasEyeDropper, setHasEyeDropper] = useState(false);
-
   const popoverRef = useRef(null);
   const triggerRef = useRef(null);
-
-  useEffect(() => {
-    if (window.EyeDropper) setHasEyeDropper(true);
-  }, []);
 
   const loadRecentColors = () => {
     try {
@@ -133,7 +127,6 @@ export default function ColorControl(id, label, value, onChange) {
   };
 
   const handleEyeDropperClick = async () => {
-    if (!window.EyeDropper) return;
     setIsOpen(false);
     closeDrawer();
     try {
@@ -170,26 +163,24 @@ export default function ColorControl(id, label, value, onChange) {
             value={hexInput}
             onChange={(e) => handleHexInputChange(e.target.value)}
             onBlur={handleHexInputBlur}
-            className={`input input-bordered input-sm w-full font-mono uppercase text-[11px] shadow-sm ${hasEyeDropper ? 'pl-2 pr-8 text-left' : 'px-2 text-center'}`}
+            className="input input-bordered input-sm w-full font-mono uppercase text-[11px] shadow-sm pl-2 pr-8 text-left"
             placeholder="#000000"
             maxLength={7}
           />
 
           {/* Cuentagotas Native en línea - Absoluto a la derecha */}
-          {hasEyeDropper && (
-            <button
-              type="button"
-              onClick={handleEyeDropperClick}
-              className="absolute right-1 w-6 h-6 flex items-center justify-center rounded text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors"
-              title="Usar cuentagotas"
-            >
+          <button
+            type="button"
+            onClick={handleEyeDropperClick}
+            className="absolute right-1 w-6 h-6 flex items-center justify-center rounded text-base-content/50 hover:text-base-content hover:bg-base-200 transition-colors"
+            title="Usar cuentagotas"
+          >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m2 22 1-1h3l9-9"/>
                 <path d="M3 21v-3l9-9"/>
                 <path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/>
               </svg>
             </button>
-          )}
         </div>
       </div>
 
